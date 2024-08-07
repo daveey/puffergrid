@@ -1,0 +1,4 @@
+include README.md
+include LICENSE
+recursive-include puffergrid *.pyx *.pxd *.py
+recursive-include examples *.pyx *.pxd *.py
