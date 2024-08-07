@@ -12,13 +12,15 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:  # Enable manual trigger
+
 permissions:
   contents: read
 
 jobs:
   deploy:
 
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v4
