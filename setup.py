@@ -2,9 +2,9 @@ from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
 import numpy
 
-def build_ext(srcs):
+def build_ext(srcs, package="puffergrid"):
     return Extension(
-        name="puffergrid." + srcs[0].split('/')[-1].split('.')[0],
+        name=package + "." + srcs[0].split('/')[-1].split('.')[0],
         sources=srcs,
         define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
         language="c++",
@@ -20,6 +20,7 @@ ext_modules = [
     build_ext(["puffergrid/grid_object.pyx"]),
     build_ext(["puffergrid/observation_encoder.pyx"]),
     build_ext(["puffergrid/stats_tracker.pyx"]),
+    build_ext(["examples/forage.pyx"], "puffergrid.examples"),
 ]
 
 setup(
