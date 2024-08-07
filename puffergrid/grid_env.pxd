@@ -1,4 +1,6 @@
-from libcpp.vector cimport vector
+cimport numpy as cnp
+import numpy as np
+
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from puffergrid.action cimport ActionHandler
@@ -8,7 +10,6 @@ from puffergrid.grid_object cimport GridObjectBase, GridObjectId, GridObject, Gr
 from puffergrid.grid cimport Grid
 from puffergrid.event cimport EventManager
 from puffergrid.observation_encoder cimport ObservationEncoder
-cimport numpy as cnp
 
 from libc.stdio cimport printf
 
@@ -17,19 +18,22 @@ cdef class GridEnv:
         Grid *_grid
         EventManager _event_manager
         unsigned int _current_timestep
+        unsigned int _max_timestep
 
         list[ActionHandler] _action_handlers
         ObservationEncoder _obs_encoder
 
-        unsigned short obs_width
-        unsigned short obs_height
+        unsigned short _obs_width
+        unsigned short _obs_height
 
         vector[GridObjectBase*] _agents
 
         cnp.ndarray _observations_np
         int[:,:,:,:] _observations
-        cnp.ndarray _dones_np
-        char[:] _dones
+        cnp.ndarray _terminals_np
+        char[:] _terminals
+        cnp.ndarray _truncations_np
+        char[:] _truncations
         cnp.ndarray _rewards_np
         float[:] _rewards
 
@@ -57,7 +61,8 @@ cdef class GridEnv:
     cpdef void set_buffers(
         self,
         cnp.ndarray[int, ndim=4] observations,
-        cnp.ndarray[char, ndim=1] dones,
+        cnp.ndarray[char, ndim=1] terminals,
+        cnp.ndarray[char, ndim=1] truncations,
         cnp.ndarray[float, ndim=1] rewards)
 
 
@@ -67,6 +72,8 @@ cdef class GridEnv:
     cpdef unsigned int map_height(self)
     cpdef list[str] grid_features(self)
     cpdef unsigned int num_actions(self)
+    cpdef unsigned int num_agents(self)
+    cpdef tuple observation_shape(self)
 
     cpdef void reset(self)
 

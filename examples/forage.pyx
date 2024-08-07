@@ -1,3 +1,4 @@
+import numpy as np
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -53,6 +54,9 @@ cdef class Move(ActionHandler):
         if not self.env._grid.is_empty(new_loc.r, new_loc.c):
             return False
         cdef char s = self.env._grid.move_object(actor_object_id, new_loc)
+        if s:
+            self.env._stats.agent_incr(actor_id, "action.move")
+
         return s
 
 cdef class Rotate(ActionHandler):
@@ -68,6 +72,7 @@ cdef class Rotate(ActionHandler):
 
         cdef Agent* agent = self.env._grid.object[Agent](actor_object_id)
         agent.props.orientation = orientation
+        self.env._stats.agent_incr(actor_id, "action.rotate")
         return True
 
 cdef class Eat(ActionHandler):
@@ -82,14 +87,15 @@ cdef class Eat(ActionHandler):
             agent.location,
             <Orientation>agent.props.orientation
         )
-        tree = self.env._grid.object_at[Tree](target_loc.r, target_loc.c, ObjectType.TreeT)
+        tree = self.env._grid.object_at[Tree](
+            self.env._grid.type_location(target_loc.r, target_loc.c, ObjectType.TreeT))
         if tree == NULL or tree.props.has_fruit == 0:
             return False
 
         tree.props.has_fruit = 0
         agent.props.energy += 10
         self.env._rewards[actor_id] += 10
-        self.env._stats.agent_incr(actor_id, "fruit_eaten")
+        self.env._stats.agent_incr(actor_id, "action.eat")
         self.env._event_manager.schedule_event(Events.ResetTree, 100, tree.id, 0)
         return True
 
@@ -100,6 +106,7 @@ cdef class Eat(ActionHandler):
 cdef class ResetTreeHandler(EventHandler):
     cdef void handle_event(self, GridObjectId obj_id, EventArg arg):
         self.env._grid.object[Tree](obj_id).props.has_fruit = True
+        self.env._stats.game_incr("fruit_spawned")
 
 cdef enum Events:
     ResetTree = 0
@@ -136,12 +143,15 @@ cdef class ObsEncoder(ObservationEncoder):
 ################################################
 
 cdef class Forage(GridEnv):
-    def __init__(self, int map_width, int map_height):
+    def __init__(
+        self, int map_width=100, int map_height=100,
+        int num_agents = 20, int num_walls = 10, int num_trees = 10):
 
         GridEnv.__init__(
             self,
             map_width,
             map_height,
+            0, # max_timestep
             [
                 ObjectType.AgentT,
                 ObjectType.WallT,
@@ -158,3 +168,30 @@ cdef class Forage(GridEnv):
                 ResetTreeHandler()
             ]
         )
+
+        # Randomly place agents, walls, and trees
+        coords = [(r, c) for r in range(map_height) for c in range(map_width)]
+        np.random.shuffle(coords)
+
+        cdef Agent *agent
+        cdef Wall *wall
+        cdef Tree *tree
+
+        for (row, col) in coords[:num_agents]:
+            agent = self._grid.create_object[Agent](ObjectType.AgentT, row, col)
+            agent.props.energy = 100
+            agent.props.orientation = 0
+            self.add_agent(agent)
+        coords = coords[num_agents:]
+
+        for (row, col) in coords[:num_walls]:
+            wall = self._grid.create_object[Wall](ObjectType.WallT, row, col)
+            wall.props.hp = 100
+        coords = coords[num_walls:]
+
+        for (row, col) in coords[:num_trees]:
+            tree = self._grid.create_object[Tree](ObjectType.TreeT, row, col)
+            tree.props.has_fruit = 1
+
+        print(f"Forage environment created {map_width}x{map_height} with {num_agents} agents, {num_walls} walls, and {num_trees} trees")
+

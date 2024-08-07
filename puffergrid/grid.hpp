@@ -53,6 +53,10 @@ class Grid {
         }
 
         inline char move_object(GridObjectId id, const GridLocation &loc) {
+            if (loc.r >= height or loc.c >= width or loc.layer >= num_layers) {
+                return false;
+            }
+
             if (grid[loc.r][loc.c][loc.layer] != 0) {
                 return false;
             }
@@ -73,30 +77,30 @@ class Grid {
             return dynamic_cast<T*>(objects[obj_id]);
         }
 
-        inline GridObjectBase* object_at(const GridLocation &loc) {
-            return objects[grid[loc.r][loc.c][loc.layer]];
-        }
-
         template <typename T>
         inline T* object_at(const GridLocation &loc) {
-            return dynamic_cast<T*>(objects[grid[loc.r][loc.c][loc.layer]]);
+            return dynamic_cast<T*>(object_at(loc));
         }
 
-        inline GridObjectBase * object_at(GridCoord row, GridCoord col, TypeId type_id) {
-            return objects[grid[row][col][layer_for_type_id[type_id]]];
-        }
-
-        template <typename T>
-        inline T* object_at(GridCoord row, GridCoord col, TypeId type_id) {
-            GridObjectBase* obj = object_at(row, col, type_id);
-            if (obj == nullptr or obj->_type_id != type_id) {
+        inline GridObjectBase* object_at(const GridLocation &loc) {
+            if (loc.r >= height or loc.c >= width or loc.layer >= num_layers) {
                 return nullptr;
             }
-            return dynamic_cast<T*>(obj);
+            return objects[grid[loc.r][loc.c][loc.layer]];
         }
 
         inline const GridLocation location(GridObjectId id) {
             return objects[id]->location;
+        }
+
+        inline const GridLocation location(unsigned int row, unsigned int col, Layer layer) {
+            GridLocation loc;
+            loc.r = row; loc.c = col; loc.layer = layer;
+            return loc;
+        }
+
+        inline const GridLocation type_location(unsigned int row, unsigned int col, TypeId type_id) {
+            return location(row, col, layer_for_type_id[type_id]);
         }
 
         inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation) {
@@ -114,16 +118,15 @@ class Grid {
                 case Right:
                     new_loc.c = loc.c + 1;
                     break;
-                default:
-                    printf("_relativelocation: Invalid orientation: %d\n", orientation);
-                    break;
             }
             return new_loc;
         }
 
         inline char is_empty(unsigned int row, unsigned int col) {
             for (int layer = 0; layer < num_layers; ++layer) {
-                if (grid[row][col][layer] != 0) {
+                GridLocation loc;
+                loc.r = row; loc.c = col; loc.layer = layer;
+                if (object_at(loc) != 0) {
                     return 0;
                 }
             }

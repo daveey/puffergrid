@@ -23,6 +23,7 @@ ext_modules = [
     build_ext(["examples/forage.pyx"], "puffergrid.examples"),
 ]
 
+optimized = True
 setup(
     name='puffergrid',
     version='0.1',
@@ -32,18 +33,19 @@ setup(
         language="c++",
         build_dir='build',
         compiler_directives={
+            "profile": True,
+
             "language_level": "3",
-            "embedsignature": True,
-            "annotation_typing": True,
-            "cdivision": True,
-            "boundscheck": False,
-            "wraparound": False,
-            "initializedcheck": False,
-            "nonecheck": False,
-            "overflowcheck": False,
-            "overflowcheck.fold": True,
-            "profile": False,
-            "linetrace": False,
+            "embedsignature": not optimized,
+            "annotation_typing": not optimized,
+            "cdivision": not optimized,
+            "boundscheck": not optimized,
+            "wraparound": not optimized,
+            "initializedcheck": not optimized,
+            "nonecheck": not optimized,
+            "overflowcheck": not optimized,
+            "overflowcheck.fold": not optimized,
+            "linetrace": not optimized,
             "c_string_encoding": "utf-8",
             "c_string_type": "str",
         },
@@ -53,4 +55,5 @@ setup(
         "numpy",
         "cython",
     ],
+    gdb_debug=True,
 )

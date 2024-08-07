@@ -15,6 +15,8 @@ cdef extern from "grid.hpp":
 
         char move_object(GridObjectId id, const GridLocation &loc)
         const GridLocation location(GridObjectId id)
+        const GridLocation location(unsigned int r, unsigned int c, Layer layer)
+        const GridLocation type_location(unsigned int r, unsigned int c, TypeId type_id)
         const GridLocation relative_location(const GridLocation &loc, Orientation orientation)
         char is_empty(unsigned int r, unsigned int c)
 
@@ -26,8 +28,6 @@ cdef extern from "grid.hpp":
         GridObjectBase* object_at(const GridLocation &loc)
         T* object_at[T](const GridLocation &loc)
 
-        GridObjectBase* object_at(unsigned int r, unsigned int c, TypeId type_id)
-        T* object_at[T](unsigned int r, unsigned int c, TypeId type_id)
 
         T* create_object[T](TypeId type_id, const GridLocation &loc)
         T* create_object[T](TypeId type_id, unsigned int r, unsigned int c)

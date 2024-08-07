@@ -37,37 +37,12 @@ class PufferGridEnv(PufferEnv):
 
     @property
     def observation_space(self):
-        type_info = np.iinfo(self._buffers.observations.dtype)
-        # return gym.spaces.Dict({
-        #     "grid_obs": gym.spaces.Box(
-        #         low=type_info.min, high=type_info.max,
-        #         shape=(self._buffers.observations.shape[1:]),
-        #         dtype=self._buffers.observations.dtype
-        #     ),
-        #     "global_vars": gym.spaces.Box(
-        #         low=-np.inf, high=np.inf,
-        #         shape=[ 0 ],
-        #         dtype=np.int32
-        #     ),
-        return gym.spaces.Box(
-            low=type_info.min, high=type_info.max,
-            shape=(self._buffers.observations.shape[1:]),
-            dtype=self._buffers.observations.dtype
-        )
-
+        return self._c_env.observation_space
 
     @property
     def action_space(self):
-        return gym.spaces.MultiDiscrete((self._c_env.num_actions(), 255))
+        return self._c_env.action_space
 
-    def _make_buffers(self):
-        return SimpleNamespace(
-            observations=np.zeros((self._num_agents, self._num_features, self._obs_height,  self._obs_width), dtype=np.int32),
-            rewards=np.zeros(self._num_agents, dtype=np.float32),
-            terminals=np.zeros(self._num_agents, dtype=bool),
-            truncations=np.zeros(self._num_agents, dtype=bool),
-            masks=np.ones(self._num_agents, dtype=bool),
-        )
     def set_buffers(self, buffers):
         self._buffers = buffers
 
@@ -83,15 +58,11 @@ class PufferGridEnv(PufferEnv):
             self._buffers.terminals,
             self._buffers.rewards)
 
-        self._buffers.observations.fill(0)
-        self._buffers.rewards.fill(0)
-        self._buffers.terminals.fill(False)
         self._c_env.reset()
         return self._buffers.observations, {}
 
     def step(self, actions):
-        self._buffers.observations.fill(0)
-        self._c_env.step(actions.astype(np.uint32))
+        self._c_env.step(actions)
 
         self._episode_rewards += self._buffers.rewards
 
