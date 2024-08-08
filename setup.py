@@ -7,8 +7,6 @@ def build_ext(srcs, package="puffergrid"):
         name=package + "." + srcs[0].split('/')[-1].split('.')[0],
         sources=srcs,
         define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
-        language="c++",
-        build_dir='build',
         include_dirs=[numpy.get_include()],
     )
 
@@ -21,16 +19,21 @@ ext_modules = [
     build_ext(["puffergrid/observation_encoder.pyx"]),
     build_ext(["puffergrid/stats_tracker.pyx"]),
     build_ext(["examples/forage.pyx"], "puffergrid.examples"),
+
+    build_ext(["tests/test_grid_object.pyx"], "puffergrid.tests"),
+    build_ext(["tests/test_action_handler.pyx"], "puffergrid.tests"),
 ]
 
-optimized = True
+os.makedirs("build", exist_ok=True)
+os.makedirs("puffergrid/tests", exist_ok=True)
+os.makedirs("puffergrid/examples", exist_ok=True)
+
+optimized = False
 setup(
     name='puffergrid',
-    version='0.1',
     packages=find_packages(),
     ext_modules=cythonize(
         ext_modules,
-        language="c++",
         build_dir='build',
         compiler_directives={
             "profile": True,
@@ -58,10 +61,4 @@ setup(
         'cython',
         'tqdm',
     ],
-    classifiers=[
-        'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-    ],
-    python_requires='>=3.6',
 )

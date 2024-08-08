@@ -1,6 +1,4 @@
-from typing import Type
-from libcpp.string cimport string
-from libcpp.vector cimport vector
+# distutils: language=c++
 
 cdef extern from "grid_object.hpp":
     ctypedef unsigned short Layer

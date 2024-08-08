@@ -1,3 +1,5 @@
+# distutils: language=c++
+
 from libcpp.vector cimport vector
 from puffergrid.grid_object cimport Layer, TypeId, GridObjectId, GridObjectBase
 from puffergrid.grid_object cimport GridLocation, Orientation
