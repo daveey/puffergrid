@@ -75,9 +75,8 @@ cdef class GridEnv:
     cpdef unsigned int num_agents(self)
     cpdef tuple observation_shape(self)
 
-    cpdef void reset(self)
-
-    cpdef void step(self, unsigned int[:,:] actions)
+    cpdef tuple[cnp.ndarray, dict] reset(self)
+    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, unsigned int[:,:] actions)
 
     cpdef observe(
         self,

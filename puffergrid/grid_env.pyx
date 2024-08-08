@@ -126,14 +126,16 @@ cdef class GridEnv:
     ###############################
     # Python API
     ###############################
-    cpdef void reset(self):
+    cpdef tuple[cnp.ndarray, dict] reset(self):
         if self._current_timestep > 0:
             raise NotImplemented("Cannot reset after stepping")
 
         self._compute_observations()
+        return (self._observations_np, {})
 
-    cpdef void step(self, unsigned int[:,:] actions):
+    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, unsigned int[:,:] actions):
         self._step(actions)
+        return (self._observations_np, self._rewards_np, self._terminals_np, self._truncations_np, {})
 
     cpdef void set_buffers(
         self,

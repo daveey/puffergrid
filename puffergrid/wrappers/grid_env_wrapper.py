@@ -11,23 +11,10 @@ import pufferlib
 from pufferlib.environment import PufferEnv
 
 class PufferGridEnv(PufferEnv):
-    def __init__(
-            self,
-            c_env,
-            num_agents=1,
-            max_timesteps=1000,
-            obs_width=11,
-            obs_height=11) -> None:
-
+    def __init__(self, c_env) -> None:
         super().__init__()
-        self._map_width = c_env.map_width()
-        self._map_height = c_env.map_height()
-        self._num_agents = num_agents
-        self._obs_width = obs_width
-        self._obs_height = obs_height
-        self._max_timesteps = max_timesteps
-
         self._c_env = c_env
+
         (o, tm, tr, re) = self._c_env.get_buffers()
         self._buffers = SimpleNamespace(
             observations=o,
@@ -35,12 +22,6 @@ class PufferGridEnv(PufferEnv):
             truncations=tr,
             rewards=re
         )
-
-        self._num_features = len(self.grid_features)
-
-        # self._grid = np.asarray(self._c_env.grid())
-
-        self._episode_rewards = np.zeros(num_agents, dtype=np.float32)
 
     @property
     def observation_space(self):
@@ -54,8 +35,6 @@ class PufferGridEnv(PufferEnv):
         raise NotImplementedError
 
     def reset(self, seed=0):
-        assert self._c_env.current_timestep() == 0, "Reset not supported"
-
         self._c_env.set_buffers(
             self._buffers.observations,
             self._buffers.terminals,
@@ -68,17 +47,13 @@ class PufferGridEnv(PufferEnv):
     def step(self, actions):
         self._c_env.step(actions)
 
-        self._episode_rewards += self._buffers.rewards
-
         infos = {}
-        if self.current_timestep >= self._max_timesteps:
-            self._buffers.terminals.fill(True)
-            self._buffers.truncations.fill(True)
-            infos = {
-                "episode_return": self._episode_rewards.mean(),
-                "episode_length": self.current_timestep,
-                "episode_stats": self._c_env.stats()
-            }
+        # if self.current_timestep >= self._max_timesteps:
+        #     infos = {
+        #         "episode_return": self._episode_rewards.mean(),
+        #         "episode_length": self.current_timestep,
+        #         "episode_stats": self._c_env.stats()
+        #     }
         return (self._buffers.observations,
                 self._buffers.rewards,
                 self._buffers.terminals,

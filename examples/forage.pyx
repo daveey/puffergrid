@@ -25,7 +25,7 @@ cdef cppclass AgentProps:
 
     @staticmethod
     inline vector[string] feature_names():
-        return ["wall", "wall:hp"]
+        return ["agent", "agent:energy", "agent:orientation"]
 
 ctypedef GridObject[AgentProps] Agent
 
@@ -59,6 +59,36 @@ cdef enum ObjectType:
     AgentT = 0
     WallT = 1
     TreeT = 2
+
+################################################
+# Define Observation Encoder
+################################################
+cdef class ObsEncoder(ObservationEncoder):
+    cdef vector[string] _feature_names
+
+    def __init__(self):
+        ObservationEncoder.__init__(self)
+        f = []
+        f.extend(AgentProps.feature_names())
+        f.extend(WallProps.feature_names())
+        f.extend(TreeProps.feature_names())
+        self._feature_names = f
+
+    cdef encode(self, GridObjectBase *obj, int[:] obs):
+        cdef Agent *agent
+        cdef Wall *wall
+        cdef Tree *tree
+
+        if obj._type_id == ObjectType.AgentT:
+            (<Agent*>obj).props.obs(obs[0:3])
+        elif obj._type_id == ObjectType.WallT:
+            (<Wall*>obj).props.obs(obs[3:5])
+        elif obj._type_id == ObjectType.TreeT:
+            (<Tree*>obj).props.obs(obs[5:7])
+
+    cdef vector[string] feature_names(self):
+        return self._feature_names
+
 
 ################################################
 # Define Actions
@@ -138,35 +168,6 @@ cdef class ResetTreeHandler(EventHandler):
 
 cdef enum Events:
     ResetTree = 0
-
-################################################
-# Define Observation Encoder
-################################################
-cdef class ObsEncoder(ObservationEncoder):
-    cdef vector[string] _feature_names
-
-    def __init__(self):
-        ObservationEncoder.__init__(self)
-        f = []
-        f.extend(AgentProps.feature_names())
-        f.extend(WallProps.feature_names())
-        f.extend(TreeProps.feature_names())
-        self._feature_names = f
-
-    cdef encode(self, GridObjectBase *obj, int[:] obs):
-        cdef Agent *agent
-        cdef Wall *wall
-        cdef Tree *tree
-
-        if obj._type_id == ObjectType.AgentT:
-            (<Agent*>obj).props.obs(obs[0:])
-        elif obj._type_id == ObjectType.WallT:
-            (<Wall*>obj).props.obs(obs[3:])
-        elif obj._type_id == ObjectType.TreeT:
-            (<Tree*>obj).props.obs(obs[5:])
-
-    cdef vector[string] feature_names(self):
-        return self._feature_names
 
 
 ################################################
