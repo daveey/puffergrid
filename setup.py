@@ -25,10 +25,10 @@ ext_modules = [
     build_ext(["tests/test_action_handler.pyx"], "puffergrid.tests"),
 ]
 
-
-optimized = True
+debug = os.getenv('DEBUG', '0') == '1'
+annotate = os.getenv('ANNOTATE', '0') == '1'
 build_dir = 'build'
-if not optimized:
+if debug:
     build_dir = 'build_debug'
 
 os.makedirs(build_dir, exist_ok=True)
@@ -44,20 +44,20 @@ setup(
         compiler_directives={
             "profile": True,
             "language_level": "3",
-            "embedsignature": not optimized,
-            "annotation_typing": not optimized,
-            "cdivision": not optimized,
-            "boundscheck": not optimized,
-            "wraparound": not optimized,
-            "initializedcheck": not optimized,
-            "nonecheck": not optimized,
-            "overflowcheck": not optimized,
-            "overflowcheck.fold": not optimized,
-            "linetrace": not optimized,
+            "embedsignature": debug,
+            "annotation_typing": debug,
+            "cdivision": debug,
+            "boundscheck": debug,
+            "wraparound": debug,
+            "initializedcheck": debug,
+            "nonecheck": debug,
+            "overflowcheck": debug,
+            "overflowcheck.fold": debug,
+            "linetrace": debug,
             "c_string_encoding": "utf-8",
             "c_string_type": "str",
         },
-        annotate=True,
+        annotate=debug or annotate,
     ),
     description='',
     url='https://github.com/daveey/puffergrid',

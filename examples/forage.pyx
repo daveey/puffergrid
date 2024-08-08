@@ -14,17 +14,45 @@ from puffergrid.event cimport EventHandler, EventArg
 # Define Game Objects
 ################################################
 
-cdef struct AgentProps:
+cdef cppclass AgentProps:
     unsigned int energy
     unsigned int orientation
+
+    inline void obs(int[:] obs):
+        obs[0] = 1
+        obs[1] = energy
+        obs[2] = orientation
+
+    @staticmethod
+    inline vector[string] feature_names():
+        return ["wall", "wall:hp"]
+
 ctypedef GridObject[AgentProps] Agent
 
-cdef struct WallProps:
+cdef cppclass WallProps:
     unsigned int hp
+
+    inline void obs(int[:] obs):
+        obs[0] = 1
+        obs[1] = hp
+
+    @staticmethod
+    inline vector[string] feature_names():
+        return ["wall", "wall:hp"]
+
 ctypedef GridObject[WallProps] Wall
 
-cdef struct TreeProps:
+cdef cppclass TreeProps:
     char has_fruit
+
+    inline void obs(int[:] obs):
+        obs[0] = 1
+        obs[1] = has_fruit
+
+    @staticmethod
+    inline vector[string] feature_names():
+        return ["tree", "tree:has_fruit"]
+
 ctypedef GridObject[TreeProps] Tree
 
 cdef enum ObjectType:
@@ -115,27 +143,30 @@ cdef enum Events:
 # Define Observation Encoder
 ################################################
 cdef class ObsEncoder(ObservationEncoder):
+    cdef vector[string] _feature_names
+
+    def __init__(self):
+        ObservationEncoder.__init__(self)
+        f = []
+        f.extend(AgentProps.feature_names())
+        f.extend(WallProps.feature_names())
+        f.extend(TreeProps.feature_names())
+        self._feature_names = f
+
     cdef encode(self, GridObjectBase *obj, int[:] obs):
         cdef Agent *agent
         cdef Wall *wall
         cdef Tree *tree
 
         if obj._type_id == ObjectType.AgentT:
-            agent = <Agent *>obj
-            obs[0] = 1
-            obs[1] = agent.props.energy
-            obs[2] = agent.props.orientation
+            (<Agent*>obj).props.obs(obs[0:])
         elif obj._type_id == ObjectType.WallT:
-            obs[3] = 1
+            (<Wall*>obj).props.obs(obs[3:])
         elif obj._type_id == ObjectType.TreeT:
-            tree = <Tree *>obj
-            obs[4] = 1
-            obs[5] = tree.props.has_fruit
+            (<Tree*>obj).props.obs(obs[5:])
 
     cdef vector[string] feature_names(self):
-        return [
-            "agent", "agent:energy", "agent:orientation",
-            "wall", "tree", "tree:has_fruit"]
+        return self._feature_names
 
 
 ################################################
@@ -149,6 +180,7 @@ cdef class Forage(GridEnv):
 
         GridEnv.__init__(
             self,
+            num_agents,
             map_width,
             map_height,
             0, # max_timestep
