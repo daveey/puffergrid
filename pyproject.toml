@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "puffergrid"
-version = "0.0.1"
+version = "0.0.2"
 description = "A framework for fast grid-based environments"
 authors = ["David Bloomin <daveey@gmail.com>"]
 license = "MIT"
