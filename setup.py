@@ -51,11 +51,7 @@ setup(
         },
         annotate=True,
     ),
-    description='A framework for fast grid-based environments',
-    long_description=open('README.md').read(),
-    long_description_content_type='text/markdown',
-    author='David Bloomin',
-    author_email='daveey@gmail.com',
+    description='',
     url='https://github.com/daveey/puffergrid',
     install_requires=[
         'numpy',
