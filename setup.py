@@ -1,6 +1,7 @@
 from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
 import numpy
+import os
 
 def build_ext(srcs, package="puffergrid"):
     return Extension(
@@ -58,7 +59,7 @@ setup(
     url='https://github.com/daveey/puffergrid',
     install_requires=[
         'numpy',
-        'cython',
+        'cython==3.0.11',
         'tqdm',
     ],
 )
