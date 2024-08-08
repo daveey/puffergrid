@@ -60,6 +60,7 @@ class GridObject : public GridObjectBase {
             : GridObjectBase(type_id) {
                 props = new T();
             }
+
 };
 
 #endif // GRID_OBJECT_HPP

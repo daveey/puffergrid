@@ -25,20 +25,24 @@ ext_modules = [
     build_ext(["tests/test_action_handler.pyx"], "puffergrid.tests"),
 ]
 
-os.makedirs("build", exist_ok=True)
+
+optimized = True
+build_dir = 'build'
+if not optimized:
+    build_dir = 'build_debug'
+
+os.makedirs(build_dir, exist_ok=True)
 os.makedirs("puffergrid/tests", exist_ok=True)
 os.makedirs("puffergrid/examples", exist_ok=True)
 
-optimized = False
 setup(
     name='puffergrid',
     packages=find_packages(),
     ext_modules=cythonize(
         ext_modules,
-        build_dir='build',
+        build_dir=build_dir,
         compiler_directives={
             "profile": True,
-
             "language_level": "3",
             "embedsignature": not optimized,
             "annotation_typing": not optimized,

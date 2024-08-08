@@ -95,3 +95,5 @@ cdef class GridEnv:
         int[:,:,:] observation)
 
     cpdef stats(self)
+
+    cpdef tuple get_buffers(self)

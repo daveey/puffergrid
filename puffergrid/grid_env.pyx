@@ -16,6 +16,7 @@ import gymnasium as gym
 cdef class GridEnv:
     def __init__(
             self,
+            unsigned int max_agents,
             unsigned int map_width,
             unsigned int map_height,
             unsigned int max_timestep,
@@ -39,11 +40,17 @@ cdef class GridEnv:
             (<ActionHandler>handler).init(self)
 
         self._event_manager = EventManager(self, event_handlers)
+        self._stats = StatsTracker(max_agents)
 
-        self._observations_np = None
-        self._terminals_np = None
-        self._truncations_np = None
-        self._rewards_np = None
+        self.set_buffers(
+            np.zeros(
+                (max_agents, len(self._obs_encoder.feature_names()),
+                self._obs_height, self._obs_width),
+                dtype=np.int32),
+            np.zeros(max_agents, dtype=np.int8),
+            np.zeros(max_agents, dtype=np.int8),
+            np.zeros(max_agents, dtype=np.float32)
+        )
 
     cdef void add_agent(self, GridObjectBase* agent):
         self._agents.push_back(agent)
@@ -113,7 +120,7 @@ cdef class GridEnv:
             handler.handle_action(idx, agent.id, arg)
         self._compute_observations()
 
-        if self._current_timestep >= self._max_timestep:
+        if self._max_timestep > 0 and self._current_timestep >= self._max_timestep:
             self._truncations[:] = 1
 
     ###############################
@@ -123,18 +130,6 @@ cdef class GridEnv:
         if self._current_timestep > 0:
             raise NotImplemented("Cannot reset after stepping")
 
-        if self._observations_np is None:
-            self.set_buffers(
-                np.zeros(
-                    (self._agents.size(), len(self._obs_encoder.feature_names()),
-                    self._obs_height, self._obs_width),
-                    dtype=np.int32),
-                np.zeros(self._agents.size(), dtype=np.int8),
-                np.zeros(self._agents.size(), dtype=np.int8),
-                np.zeros(self._agents.size(), dtype=np.float32)
-            )
-
-        self._stats = StatsTracker(self._agents.size())
         self._compute_observations()
 
     cpdef void step(self, unsigned int[:,:] actions):
@@ -204,6 +199,9 @@ cdef class GridEnv:
 
     cpdef stats(self):
         return self._stats.to_pydict()
+
+    cpdef tuple get_buffers(self):
+        return (self._observations_np, self._terminals_np, self._truncations_np, self._rewards_np)
 
     @property
     def action_space(self):

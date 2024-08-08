@@ -28,12 +28,19 @@ class PufferGridEnv(PufferEnv):
         self._max_timesteps = max_timesteps
 
         self._c_env = c_env
+        (o, tm, tr, re) = self._c_env.get_buffers()
+        self._buffers = SimpleNamespace(
+            observations=o,
+            terminals=tm,
+            truncations=tr,
+            rewards=re
+        )
+
         self._num_features = len(self.grid_features)
 
         # self._grid = np.asarray(self._c_env.grid())
 
         self._episode_rewards = np.zeros(num_agents, dtype=np.float32)
-        self._buffers = self._make_buffers()
 
     @property
     def observation_space(self):
@@ -43,10 +50,6 @@ class PufferGridEnv(PufferEnv):
     def action_space(self):
         return self._c_env.action_space
 
-    def set_buffers(self, buffers):
-        self._buffers = buffers
-
-
     def render(self):
         raise NotImplementedError
 
@@ -55,6 +58,7 @@ class PufferGridEnv(PufferEnv):
 
         self._c_env.set_buffers(
             self._buffers.observations,
+            self._buffers.terminals,
             self._buffers.terminals,
             self._buffers.rewards)
 
