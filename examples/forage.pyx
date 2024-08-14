@@ -1,22 +1,32 @@
 import numpy as np
+from libc.stdio cimport printf
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 
-from puffergrid.grid_object cimport GridObjectBase, GridObject, GridLocation, GridObjectId, Orientation
+from puffergrid.grid_object cimport GridObject, GridCoord, GridLocation, GridObjectId, Orientation, TypeId
 from puffergrid.grid_env cimport GridEnv
 from puffergrid.action cimport ActionHandler, ActionArg
 from puffergrid.observation_encoder cimport ObservationEncoder
 from puffergrid.event cimport EventHandler, EventArg
-
+import sys
 
 ################################################
 # Define Game Objects
 ################################################
+cdef enum ObjectType:
+    AgentT = 0
+    WallT = 1
+    TreeT = 2
 
-cdef cppclass AgentProps:
+cdef cppclass Agent(GridObject):
     unsigned int energy
     unsigned int orientation
+
+    Agent(GridCoord r, GridCoord c):
+        init(ObjectType.AgentT, GridLocation(r, c))
+        energy = 100
+        orientation = 0
 
     inline void obs(int[:] obs):
         obs[0] = 1
@@ -27,10 +37,12 @@ cdef cppclass AgentProps:
     inline vector[string] feature_names():
         return ["agent", "agent:energy", "agent:orientation"]
 
-ctypedef GridObject[AgentProps] Agent
-
-cdef cppclass WallProps:
+cdef cppclass Wall(GridObject):
     unsigned int hp
+
+    Wall(GridCoord r, GridCoord c):
+        init(ObjectType.WallT, GridLocation(r, c))
+        hp = 100
 
     inline void obs(int[:] obs):
         obs[0] = 1
@@ -40,10 +52,13 @@ cdef cppclass WallProps:
     inline vector[string] feature_names():
         return ["wall", "wall:hp"]
 
-ctypedef GridObject[WallProps] Wall
 
-cdef cppclass TreeProps:
+cdef cppclass Tree(GridObject):
     char has_fruit
+
+    Tree(GridCoord r, GridCoord c):
+        init(ObjectType.TreeT, GridLocation(r, c))
+        this.has_fruit = 1
 
     inline void obs(int[:] obs):
         obs[0] = 1
@@ -53,12 +68,6 @@ cdef cppclass TreeProps:
     inline vector[string] feature_names():
         return ["tree", "tree:has_fruit"]
 
-ctypedef GridObject[TreeProps] Tree
-
-cdef enum ObjectType:
-    AgentT = 0
-    WallT = 1
-    TreeT = 2
 
 ################################################
 # Define Observation Encoder
@@ -69,22 +78,22 @@ cdef class ObsEncoder(ObservationEncoder):
     def __init__(self):
         ObservationEncoder.__init__(self)
         f = []
-        f.extend(AgentProps.feature_names())
-        f.extend(WallProps.feature_names())
-        f.extend(TreeProps.feature_names())
+        f.extend(Agent.feature_names())
+        f.extend(Wall.feature_names())
+        f.extend(Tree.feature_names())
         self._feature_names = f
 
-    cdef encode(self, GridObjectBase *obj, int[:] obs):
+    cdef encode(self, GridObject *obj, int[:] obs):
         cdef Agent *agent
         cdef Wall *wall
         cdef Tree *tree
 
         if obj._type_id == ObjectType.AgentT:
-            (<Agent*>obj).props.obs(obs[0:3])
+            (<Agent*>obj).obs(obs[0:3])
         elif obj._type_id == ObjectType.WallT:
-            (<Wall*>obj).props.obs(obs[3:5])
+            (<Wall*>obj).obs(obs[3:5])
         elif obj._type_id == ObjectType.TreeT:
-            (<Tree*>obj).props.obs(obs[5:7])
+            (<Tree*>obj).obs(obs[5:7])
 
     cdef vector[string] feature_names(self):
         return self._feature_names
@@ -105,8 +114,8 @@ cdef class Move(ActionHandler):
         if direction >= 2:
             return False
 
-        cdef Agent* agent = self.env._grid.object[Agent](actor_object_id)
-        cdef Orientation orientation = <Orientation>((agent.props.orientation + 2*(direction)) % 4)
+        cdef Agent* agent = <Agent*>self.env._grid.object(actor_object_id)
+        cdef Orientation orientation = <Orientation>((agent.orientation + 2*(direction)) % 4)
         cdef GridLocation old_loc = agent.location
         cdef GridLocation new_loc = self.env._grid.relative_location(old_loc, orientation)
         if not self.env._grid.is_empty(new_loc.r, new_loc.c):
@@ -128,8 +137,8 @@ cdef class Rotate(ActionHandler):
         if orientation >= 4:
             return False
 
-        cdef Agent* agent = self.env._grid.object[Agent](actor_object_id)
-        agent.props.orientation = orientation
+        cdef Agent* agent = <Agent*>self.env._grid.object(actor_object_id)
+        agent.orientation = orientation
         self.env._stats.agent_incr(actor_id, "action.rotate")
         return True
 
@@ -140,18 +149,20 @@ cdef class Eat(ActionHandler):
         GridObjectId actor_object_id,
         ActionArg arg):
         cdef Tree *tree = NULL
-        cdef Agent* agent = self.env._grid.object[Agent](actor_object_id)
+        cdef Agent* agent = <Agent*>self.env._grid.object(actor_object_id)
         cdef GridLocation target_loc = self.env._grid.relative_location(
             agent.location,
-            <Orientation>agent.props.orientation
+            <Orientation>agent.orientation,
+            ObjectType.TreeT
         )
-        tree = self.env._grid.object_at[Tree](
-            self.env._grid.type_location(target_loc.r, target_loc.c, ObjectType.TreeT))
-        if tree == NULL or tree.props.has_fruit == 0:
+
+        tree = <Tree*>self.env._grid.object_at(target_loc, ObjectType.TreeT)
+
+        if tree == NULL or tree.has_fruit == 0:
             return False
 
-        tree.props.has_fruit = 0
-        agent.props.energy += 10
+        tree.has_fruit = 0
+        agent.energy += 10
         self.env._rewards[actor_id] += 10
         self.env._stats.agent_incr(actor_id, "action.eat")
         self.env._event_manager.schedule_event(Events.ResetTree, 100, tree.id, 0)
@@ -163,12 +174,18 @@ cdef class Eat(ActionHandler):
 
 cdef class ResetTreeHandler(EventHandler):
     cdef void handle_event(self, GridObjectId obj_id, EventArg arg):
-        self.env._grid.object[Tree](obj_id).props.has_fruit = True
+        (<Tree*>self.env._grid.object(obj_id)).has_fruit = True
         self.env._stats.game_incr("fruit_spawned")
 
 cdef enum Events:
     ResetTree = 0
 
+
+ObjectLayers = {
+    ObjectType.AgentT: 0,
+    ObjectType.WallT: 0,
+    ObjectType.TreeT: 0
+}
 
 ################################################
 # Define The Environment
@@ -176,8 +193,8 @@ cdef enum Events:
 
 cdef class Forage(GridEnv):
     def __init__(
-        self, int map_width=100, int map_height=100,
-        int num_agents = 20, int num_walls = 10, int num_trees = 10):
+        self, int map_width=50, int map_height=50,
+        int num_agents = 2, int num_walls = 20, int num_trees = 20):
 
         GridEnv.__init__(
             self,
@@ -185,11 +202,7 @@ cdef class Forage(GridEnv):
             map_width,
             map_height,
             0, # max_timestep
-            [
-                ObjectType.AgentT,
-                ObjectType.WallT,
-                ObjectType.TreeT
-            ],
+            ObjectLayers.values(),
             11, 11, # observation shape
             ObsEncoder(),
             [
@@ -211,20 +224,27 @@ cdef class Forage(GridEnv):
         cdef Tree *tree
 
         for (row, col) in coords[:num_agents]:
-            agent = self._grid.create_object[Agent](ObjectType.AgentT, row, col)
-            agent.props.energy = 100
-            agent.props.orientation = 0
+            agent = new Agent(row, col)
+            self._grid.add_object(agent)
             self.add_agent(agent)
         coords = coords[num_agents:]
 
         for (row, col) in coords[:num_walls]:
-            wall = self._grid.create_object[Wall](ObjectType.WallT, row, col)
-            wall.props.hp = 100
+            wall = new Wall(row, col)
+            self._grid.add_object(wall)
         coords = coords[num_walls:]
 
         for (row, col) in coords[:num_trees]:
-            tree = self._grid.create_object[Tree](ObjectType.TreeT, row, col)
-            tree.props.has_fruit = 1
+            tree = new Tree(row, col)
+            r = self._grid.add_object(tree)
 
         print(f"Forage environment created {map_width}x{map_height} with {num_agents} agents, {num_walls} walls, and {num_trees} trees")
+
+
+    def render(this):
+        grid = this.render_ascii(["A", "#", "&"])
+        sys.stdout.write("\033[H\033[J")
+        for row in grid:
+            sys.stdout.write(" ".join(map(str, row)) + "\n")
+            sys.stdout.flush()
 

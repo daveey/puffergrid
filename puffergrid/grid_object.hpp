@@ -10,17 +10,15 @@ typedef unsigned short Layer;
 typedef unsigned short TypeId;
 typedef unsigned int GridCoord;
 
-struct GridObjectType {
-    TypeId type_id;
-    string name;
-    vector<string> property_names;
-    Layer layer;
-};
+class GridLocation {
+    public:
+        GridCoord r;
+        GridCoord c;
+        Layer layer;
 
-struct GridLocation {
-    GridCoord r;
-    GridCoord c;
-    Layer layer;
+        inline GridLocation(GridCoord r, GridCoord c, Layer layer) : r(r), c(c), layer(layer) {}
+        inline GridLocation(GridCoord r, GridCoord c) : r(r), c(c), layer(0) {}
+        inline GridLocation(): r(0), c(0), layer(0) {}
 };
 
 enum Orientation {
@@ -32,34 +30,24 @@ enum Orientation {
 
 typedef unsigned int GridObjectId;
 
-class GridObjectBase {
+class GridObject {
     public:
         GridObjectId id;
         GridLocation location;
-        const TypeId _type_id;
+        TypeId _type_id;
 
-        GridObjectBase(TypeId type_id) : _type_id(type_id) {}
-        virtual ~GridObjectBase() {}
-};
-
-template <typename T>
-class GridObject : public GridObjectBase {
-    public:
-        T* props;
-
-        static GridObject<T>* create(TypeId type_id) {
-            T* props = new T();
-            return new GridObject<T>(type_id, props);
+        inline void init(TypeId type_id, const GridLocation &loc) {
+            this->_type_id = type_id;
+            this->location = loc;
         }
 
-        ~GridObject() {
-            delete props;
+        inline void init(TypeId type_id, GridCoord r, GridCoord c) {
+            init(type_id, GridLocation(r, c, 0));
         }
 
-        GridObject(TypeId type_id)
-            : GridObjectBase(type_id) {
-                props = new T();
-            }
+        inline void init(TypeId type_id, GridCoord r, GridCoord c, Layer layer) {
+            init(type_id, GridLocation(r, c, layer));
+        }
 
 };
 

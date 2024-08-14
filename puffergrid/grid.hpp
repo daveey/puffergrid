@@ -16,7 +16,7 @@ class Grid {
         Layer num_layers;
 
         GridType grid;
-        vector<GridObjectBase*> objects;
+        vector<GridObject*> objects;
 
         inline Grid(unsigned int width, unsigned int height, vector<Layer> layer_for_type_id)
             : width(width), height(height), layer_for_type_id(layer_for_type_id) {
@@ -29,28 +29,20 @@ class Grid {
                 objects.push_back(nullptr);
         }
 
-        template <typename T>
-        inline T* create_object(TypeId type_id, const GridLocation &loc) {
-            if (this->grid[loc.r][loc.c][loc.layer] != 0) {
-                return nullptr;
+        inline char add_object(GridObject * obj) {
+            if (obj->location.r >= height or obj->location.c >= width or obj->location.layer >= num_layers) {
+                return false;
+            }
+            if (this->grid[obj->location.r][obj->location.c][obj->location.layer] != 0) {
+                return false;
             }
 
-            T* obj = new T(type_id);
-            obj->location = loc;
             obj->id = this->objects.size();
             this->objects.push_back(obj);
-            this->grid[loc.r][loc.c][loc.layer] = obj->id;
-            return obj;
+            this->grid[obj->location.r][obj->location.c][obj->location.layer] = obj->id;
+            return true;
         }
 
-        template <typename T>
-        inline T* create_object(TypeId type_id, unsigned int row, unsigned int col) {
-            if (type_id >= layer_for_type_id.size()) {
-                return nullptr;
-            }
-            GridLocation loc = {row, col, layer_for_type_id[type_id]};
-            return create_object<T>(type_id, loc);
-        }
 
         inline char move_object(GridObjectId id, const GridLocation &loc) {
             if (loc.r >= height or loc.c >= width or loc.layer >= num_layers) {
@@ -61,46 +53,46 @@ class Grid {
                 return false;
             }
 
-            GridObjectBase* obj = objects[id];
+            GridObject* obj = objects[id];
             grid[loc.r][loc.c][loc.layer] = id;
             grid[obj->location.r][obj->location.c][obj->location.layer] = 0;
             obj->location = loc;
             return true;
         }
 
-        inline GridObjectBase* object(GridObjectId obj_id) {
+        inline GridObject* object(GridObjectId obj_id) {
             return objects[obj_id];
         }
 
-        template <typename T>
-        inline T* object(GridObjectId obj_id) {
-            return dynamic_cast<T*>(objects[obj_id]);
-        }
-
-        template <typename T>
-        inline T* object_at(const GridLocation &loc) {
-            return dynamic_cast<T*>(object_at(loc));
-        }
-
-        inline GridObjectBase* object_at(const GridLocation &loc) {
+        inline GridObject* object_at(const GridLocation &loc) {
             if (loc.r >= height or loc.c >= width or loc.layer >= num_layers) {
+                return nullptr;
+            }
+            if (grid[loc.r][loc.c][loc.layer] == 0) {
                 return nullptr;
             }
             return objects[grid[loc.r][loc.c][loc.layer]];
         }
 
+        inline GridObject* object_at(const GridLocation &loc, TypeId type_id) {
+            GridObject *obj = object_at(loc);
+            if (obj != NULL and obj->_type_id == type_id) {
+                return obj;
+            }
+            return nullptr;
+        }
+
+        inline GridObject* object_at(GridCoord r, GridCoord c, TypeId type_id) {
+            GridObject *obj = object_at(GridLocation(r, c), this->layer_for_type_id[type_id]);
+            if (obj->_type_id != type_id) {
+                return nullptr;
+            }
+
+            return obj;
+        }
+
         inline const GridLocation location(GridObjectId id) {
             return objects[id]->location;
-        }
-
-        inline const GridLocation location(unsigned int row, unsigned int col, Layer layer) {
-            GridLocation loc;
-            loc.r = row; loc.c = col; loc.layer = layer;
-            return loc;
-        }
-
-        inline const GridLocation type_location(unsigned int row, unsigned int col, TypeId type_id) {
-            return location(row, col, layer_for_type_id[type_id]);
         }
 
         inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation) {
@@ -122,11 +114,18 @@ class Grid {
             return new_loc;
         }
 
+        inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation, TypeId type_id) {
+            GridLocation rloc = this->relative_location(loc, orientation);
+            rloc.layer = this->layer_for_type_id[type_id];
+            return rloc;
+        }
+
         inline char is_empty(unsigned int row, unsigned int col) {
+            GridLocation loc;
+            loc.r = row; loc.c = col;
             for (int layer = 0; layer < num_layers; ++layer) {
-                GridLocation loc;
-                loc.r = row; loc.c = col; loc.layer = layer;
-                if (object_at(loc) != 0) {
+                loc.layer = layer;
+                if (object_at(loc) != nullptr) {
                     return 0;
                 }
             }

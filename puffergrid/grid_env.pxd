@@ -6,7 +6,7 @@ from libcpp.vector cimport vector
 from puffergrid.action cimport ActionHandler
 from puffergrid.event cimport EventManager
 from puffergrid.stats_tracker cimport StatsTracker
-from puffergrid.grid_object cimport GridObjectBase, GridObjectId, GridObject, GridLocation, Orientation, Layer
+from puffergrid.grid_object cimport GridObjectId, GridObject
 from puffergrid.grid cimport Grid
 from puffergrid.event cimport EventManager
 from puffergrid.observation_encoder cimport ObservationEncoder
@@ -26,7 +26,7 @@ cdef class GridEnv:
         unsigned short _obs_width
         unsigned short _obs_height
 
-        vector[GridObjectBase*] _agents
+        vector[GridObject*] _agents
 
         cnp.ndarray _observations_np
         int[:,:,:,:] _observations
@@ -41,7 +41,7 @@ cdef class GridEnv:
 
         list[string] _grid_features
 
-    cdef void add_agent(self, GridObjectBase* agent)
+    cdef void add_agent(self, GridObject* agent)
 
     cdef void _compute_observations(self)
     cdef void _step(self, unsigned int[:,:] actions)
@@ -96,3 +96,4 @@ cdef class GridEnv:
     cpdef stats(self)
 
     cpdef tuple get_buffers(self)
+    cpdef cnp.ndarray render_ascii(self, list[char] type_to_char)

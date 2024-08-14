@@ -5,10 +5,13 @@ cdef extern from "grid_object.hpp":
     ctypedef unsigned short TypeId
 
     ctypedef unsigned int GridCoord
-    cdef struct GridLocation:
+    cdef cppclass GridLocation:
         GridCoord r
         GridCoord c
         Layer layer
+        GridLocation()
+        GridLocation(GridCoord r, GridCoord c, Layer l)
+        GridLocation(GridCoord r, GridCoord c)
 
     ctypedef enum Orientation:
         Up = 0
@@ -18,21 +21,12 @@ cdef extern from "grid_object.hpp":
 
     ctypedef unsigned int GridObjectId
 
-    cdef cppclass GridObjectBase:
+    cdef cppclass GridObject:
         GridObjectId id
         GridLocation location
         TypeId _type_id
 
-        GridObjectBase(TypeId type_id)
+        GridObject()
         void __dealloc__()
+        void init(TypeId type_id, const GridLocation &loc)
 
-    cdef cppclass GridObject[T] (GridObjectBase):
-        T* props
-
-        GridObject(TypeId type_id)
-        void __dealloc__()
-
-        @staticmethod
-        GridObject[T]* create(TypeId type_id)
-
-        void __dealloc__()

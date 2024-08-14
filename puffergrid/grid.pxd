@@ -1,8 +1,8 @@
 # distutils: language=c++
 
 from libcpp.vector cimport vector
-from puffergrid.grid_object cimport Layer, TypeId, GridObjectId, GridObjectBase
-from puffergrid.grid_object cimport GridLocation, Orientation
+from puffergrid.grid_object cimport Layer, TypeId, GridObjectId, GridObject
+from puffergrid.grid_object cimport GridLocation, Orientation, GridCoord
 
 cdef extern from "grid.hpp":
     cdef cppclass Grid:
@@ -11,25 +11,21 @@ cdef extern from "grid.hpp":
         Layer num_layers
 
         vector[vector[vector[int]]] grid
-        vector[GridObjectBase*] objects
+        vector[GridObject*] objects
 
         Grid(unsigned int width, unsigned int height, vector[Layer] layer_for_type_id)
 
         char move_object(GridObjectId id, const GridLocation &loc)
         const GridLocation location(GridObjectId id)
         const GridLocation location(unsigned int r, unsigned int c, Layer layer)
-        const GridLocation type_location(unsigned int r, unsigned int c, TypeId type_id)
         const GridLocation relative_location(const GridLocation &loc, Orientation orientation)
+        const GridLocation relative_location(const GridLocation &loc, Orientation orientation, TypeId type_id)
         char is_empty(unsigned int r, unsigned int c)
 
-        GridObjectBase* create_object(TypeId type_id, const GridLocation &loc)
+        char add_object(GridObject *obj)
 
-        GridObjectBase* object(GridObjectId obj_id)
-        T* object[T](GridObjectId obj_id)
+        GridObject* object(GridObjectId obj_id)
 
-        GridObjectBase* object_at(const GridLocation &loc)
-        T* object_at[T](const GridLocation &loc)
-
-
-        T* create_object[T](TypeId type_id, const GridLocation &loc)
-        T* create_object[T](TypeId type_id, unsigned int r, unsigned int c)
+        GridObject* object_at(const GridLocation &loc)
+        GridObject* object_at(const GridLocation &loc, TypeId type_id)
+        GridObject* object_at(GridCoord r, GridCoord c, TypeId type_id)

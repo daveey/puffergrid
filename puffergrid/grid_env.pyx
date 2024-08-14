@@ -5,7 +5,7 @@ import numpy as np
 from puffergrid.action cimport ActionArg, ActionHandler
 from puffergrid.grid_object cimport Layer, GridLocation
 from puffergrid.observation_encoder cimport ObservationEncoder
-from puffergrid.grid_object cimport GridObjectBase, GridObjectId
+from puffergrid.grid_object cimport GridObject, GridObjectId
 from puffergrid.event cimport EventManager, EventHandler
 from puffergrid.grid cimport Grid
 from libcpp.vector cimport vector
@@ -52,7 +52,7 @@ cdef class GridEnv:
             np.zeros(max_agents, dtype=np.float32)
         )
 
-    cdef void add_agent(self, GridObjectBase* agent):
+    cdef void add_agent(self, GridObject* agent):
         self._agents.push_back(agent)
 
     cdef void _compute_observation(
@@ -64,7 +64,7 @@ cdef class GridEnv:
         cdef:
             int r, c, layer
             GridLocation object_loc
-            GridObjectBase *obj
+            GridObject *obj
             unsigned short obs_width_r = obs_width >> 1
             unsigned short obs_height_r = obs_height >> 1
             cdef unsigned int obs_r, obs_c
@@ -90,7 +90,7 @@ cdef class GridEnv:
                     self._obs_encoder.encode(obj, agent_ob)
 
     cdef void _compute_observations(self):
-        cdef GridObjectBase *agent
+        cdef GridObject *agent
         for idx in range(self._agents.size()):
             agent = self._agents[idx]
             self._compute_observation(
@@ -102,7 +102,7 @@ cdef class GridEnv:
             unsigned int idx
             short action
             ActionArg arg
-            GridObjectBase *agent
+            GridObject *agent
             ActionHandler handler
 
         self._terminals[:] = 0
@@ -184,7 +184,7 @@ cdef class GridEnv:
         unsigned short obs_height,
         int[:,:,:] observation):
 
-        cdef GridObjectBase* observer = self._grid.object(observer_id)
+        cdef GridObject* observer = self._grid.object(observer_id)
         self._compute_observation(
             observer.location.r, observer.location.c, obs_width, obs_height, observation)
 
@@ -205,6 +205,14 @@ cdef class GridEnv:
     cpdef tuple get_buffers(self):
         return (self._observations_np, self._terminals_np, self._truncations_np, self._rewards_np)
 
+    cpdef cnp.ndarray render_ascii(self, list[char] type_to_char):
+        cdef GridObject *obj
+        grid = np.full((self._grid.height, self._grid.width), " ", dtype=np.str_)
+        for obj_id in range(1, self._grid.objects.size()):
+            obj = self._grid.object(obj_id)
+            grid[obj.location.r, obj.location.c] = type_to_char[obj._type_id]
+        return grid
+
     @property
     def action_space(self):
         return gym.spaces.MultiDiscrete((self.num_actions(), 255), dtype=np.uint32)
@@ -220,4 +228,5 @@ cdef class GridEnv:
                 self.obs_height, self.obs_width),
             dtype=int
         )
+
 
