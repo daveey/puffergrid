@@ -12,7 +12,6 @@ from libcpp.vector cimport vector
 from puffergrid.stats_tracker cimport StatsTracker
 import gymnasium as gym
 
-
 cdef class GridEnv:
     def __init__(
             self,
@@ -59,7 +58,7 @@ cdef class GridEnv:
         self,
         unsigned observer_r, unsigned int observer_c,
         unsigned short obs_width, unsigned short obs_height,
-        int[:,:,:] observation):
+        ObsType[:,:,:] observation):
 
         cdef:
             int r, c, layer
@@ -68,7 +67,7 @@ cdef class GridEnv:
             unsigned short obs_width_r = obs_width >> 1
             unsigned short obs_height_r = obs_height >> 1
             cdef unsigned int obs_r, obs_c
-            cdef int[:] agent_ob
+            cdef ObsType[:] agent_ob
 
         cdef unsigned int r_start = max(observer_r, obs_height_r) - obs_height_r
         cdef unsigned int c_start = max(observer_c, obs_width_r) - obs_width_r
@@ -97,7 +96,7 @@ cdef class GridEnv:
                 agent.location.r, agent.location.c,
                 self._obs_width, self._obs_height, self._observations[idx])
 
-    cdef void _step(self, unsigned int[:,:] actions):
+    cdef void _step(self, int[:,:] actions):
         cdef:
             unsigned int idx
             short action
@@ -133,7 +132,7 @@ cdef class GridEnv:
         self._compute_observations()
         return (self._observations_np, {})
 
-    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, unsigned int[:,:] actions):
+    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, int[:,:] actions):
         self._step(actions)
         return (self._observations_np, self._rewards_np, self._terminals_np, self._truncations_np, {})
 
@@ -219,14 +218,13 @@ cdef class GridEnv:
 
     @property
     def observation_space(self):
-        type_info = np.iinfo(int)
+        type_info = np.iinfo(np.int32)
         return gym.spaces.Box(
             low=type_info.min, high=type_info.max,
             shape=(
-                self._agents.size(),
                 len(self._obs_encoder.feature_names()),
-                self.obs_height, self.obs_width),
-            dtype=int
+                self._obs_height, self._obs_width),
+            dtype=np.int32
         )
 
 

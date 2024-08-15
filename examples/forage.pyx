@@ -7,7 +7,7 @@ from libcpp.string cimport string
 from puffergrid.grid_object cimport GridObject, GridCoord, GridLocation, GridObjectId, Orientation, TypeId
 from puffergrid.grid_env cimport GridEnv
 from puffergrid.action cimport ActionHandler, ActionArg
-from puffergrid.observation_encoder cimport ObservationEncoder
+from puffergrid.observation_encoder cimport ObservationEncoder, ObsType
 from puffergrid.event cimport EventHandler, EventArg
 import sys
 
@@ -28,7 +28,7 @@ cdef cppclass Agent(GridObject):
         energy = 100
         orientation = 0
 
-    inline void obs(int[:] obs):
+    inline void obs(ObsType[:] obs):
         obs[0] = 1
         obs[1] = energy
         obs[2] = orientation
@@ -44,7 +44,7 @@ cdef cppclass Wall(GridObject):
         init(ObjectType.WallT, GridLocation(r, c))
         hp = 100
 
-    inline void obs(int[:] obs):
+    inline void obs(ObsType[:] obs):
         obs[0] = 1
         obs[1] = hp
 
@@ -60,7 +60,7 @@ cdef cppclass Tree(GridObject):
         init(ObjectType.TreeT, GridLocation(r, c))
         this.has_fruit = 1
 
-    inline void obs(int[:] obs):
+    inline void obs(ObsType[:] obs):
         obs[0] = 1
         obs[1] = has_fruit
 
@@ -83,7 +83,7 @@ cdef class ObsEncoder(ObservationEncoder):
         f.extend(Tree.feature_names())
         self._feature_names = f
 
-    cdef encode(self, GridObject *obj, int[:] obs):
+    cdef encode(self, GridObject *obj, ObsType[:] obs):
         cdef Agent *agent
         cdef Wall *wall
         cdef Tree *tree

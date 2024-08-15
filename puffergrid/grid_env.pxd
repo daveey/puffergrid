@@ -9,9 +9,11 @@ from puffergrid.stats_tracker cimport StatsTracker
 from puffergrid.grid_object cimport GridObjectId, GridObject
 from puffergrid.grid cimport Grid
 from puffergrid.event cimport EventManager
-from puffergrid.observation_encoder cimport ObservationEncoder
+from puffergrid.observation_encoder cimport ObservationEncoder, ObsType
 
 from libc.stdio cimport printf
+
+ctypedef unsigned int ActionType
 
 cdef class GridEnv:
     cdef:
@@ -29,7 +31,7 @@ cdef class GridEnv:
         vector[GridObject*] _agents
 
         cnp.ndarray _observations_np
-        int[:,:,:,:] _observations
+        ObsType[:,:,:,:] _observations
         cnp.ndarray _terminals_np
         char[:] _terminals
         cnp.ndarray _truncations_np
@@ -44,7 +46,7 @@ cdef class GridEnv:
     cdef void add_agent(self, GridObject* agent)
 
     cdef void _compute_observations(self)
-    cdef void _step(self, unsigned int[:,:] actions)
+    cdef void _step(self, int[:,:] actions)
 
     cdef void _compute_observation(
         self,
@@ -52,7 +54,7 @@ cdef class GridEnv:
         unsigned int observer_c,
         unsigned short obs_width,
         unsigned short obs_height,
-        int[:,:,:] observation)
+        ObsType[:,:,:] observation)
 
     ############################################
     # Python API
@@ -60,7 +62,7 @@ cdef class GridEnv:
 
     cpdef void set_buffers(
         self,
-        cnp.ndarray[int, ndim=4] observations,
+        cnp.ndarray[ObsType, ndim=4] observations,
         cnp.ndarray[char, ndim=1] terminals,
         cnp.ndarray[char, ndim=1] truncations,
         cnp.ndarray[float, ndim=1] rewards)
@@ -76,14 +78,14 @@ cdef class GridEnv:
     cpdef tuple observation_shape(self)
 
     cpdef tuple[cnp.ndarray, dict] reset(self)
-    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, unsigned int[:,:] actions)
+    cpdef tuple[cnp.ndarray, cnp.ndarray, cnp.ndarray, cnp.ndarray, dict] step(self, int[:,:] actions)
 
     cpdef observe(
         self,
         GridObjectId observer_id,
         unsigned short obs_width,
         unsigned short obs_height,
-        int[:,:,:] observation)
+        ObsType[:,:,:] observation)
 
     cpdef observe_at(
         self,
@@ -91,7 +93,7 @@ cdef class GridEnv:
         unsigned short col,
         unsigned short obs_width,
         unsigned short obs_height,
-        int[:,:,:] observation)
+        ObsType[:,:,:] observation)
 
     cpdef stats(self)
 
