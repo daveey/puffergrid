@@ -29,6 +29,14 @@ class Grid {
                 objects.push_back(nullptr);
         }
 
+        inline ~Grid() {
+            for (int id = 1; id < objects.size(); ++id) {
+                if (objects[id] != nullptr) {
+                    delete objects[id];
+                }
+            }
+        }
+
         inline char add_object(GridObject * obj) {
             if (obj->location.r >= height or obj->location.c >= width or obj->location.layer >= num_layers) {
                 return false;
@@ -43,6 +51,15 @@ class Grid {
             return true;
         }
 
+        inline void remove_object(GridObject * obj) {
+            this->grid[obj->location.r][obj->location.c][obj->location.layer] = 0;
+            this->objects[obj->id] = nullptr;
+        }
+
+        inline void remove_object(GridObjectId id) {
+            GridObject *obj = this->objects[id];
+            this->remove_object(obj);
+        }
 
         inline char move_object(GridObjectId id, const GridLocation &loc) {
             if (loc.r >= height or loc.c >= width or loc.layer >= num_layers) {
@@ -95,29 +112,45 @@ class Grid {
             return objects[id]->location;
         }
 
-        inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation) {
-            GridLocation new_loc = loc;
+        inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation, GridCoord distance, GridCoord offset) {
+            int new_r = loc.r;
+            int new_c = loc.c;
+
             switch (orientation) {
                 case Up:
-                    if (loc.r > 0) new_loc.r = loc.r - 1;
+                    new_r = loc.r - distance;
+                    new_c = loc.c + offset;
                     break;
                 case Down:
-                    new_loc.r = loc.r + 1;
+                    new_r = loc.r + distance;
+                    new_c = loc.c - offset;
                     break;
                 case Left:
-                    if (loc.c > 0) new_loc.c = loc.c - 1;
+                    new_r = loc.r + offset;
+                    new_c = loc.c - distance;
                     break;
                 case Right:
-                    new_loc.c = loc.c + 1;
+                    new_r = loc.r - offset;
+                    new_c = loc.c + distance;
                     break;
             }
-            return new_loc;
+            new_r = max(0, new_r);
+            new_c = max(0, new_c);
+            return GridLocation(new_r, new_c, loc.layer);
+        }
+
+        inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation, GridCoord distance, GridCoord offset, TypeId type_id) {
+            GridLocation rloc = this->relative_location(loc, orientation, distance, offset);
+            rloc.layer = this->layer_for_type_id[type_id];
+            return rloc;
+        }
+
+        inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation) {
+            return this->relative_location(loc, orientation, 1, 0);
         }
 
         inline const GridLocation relative_location(const GridLocation &loc, Orientation orientation, TypeId type_id) {
-            GridLocation rloc = this->relative_location(loc, orientation);
-            rloc.layer = this->layer_for_type_id[type_id];
-            return rloc;
+            return this->relative_location(loc, orientation, 1, 0, type_id);
         }
 
         inline char is_empty(unsigned int row, unsigned int col) {

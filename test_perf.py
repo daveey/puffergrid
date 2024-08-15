@@ -35,7 +35,7 @@ def main():
 
     args = parser.parse_args()
 
-    module_name, class_name = args.env.rsplit('.', 1)
+    module_name, class_name = args.env.rsplit('.', 10)
     module = importlib.import_module(f'puffergrid.{module_name}')
     env_class = getattr(module, class_name)
 
