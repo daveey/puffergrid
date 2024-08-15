@@ -5,7 +5,7 @@ from libcpp.string cimport string
 
 from puffergrid.grid_object cimport GridObject
 
-ctypedef int ObsType
+ctypedef unsigned char ObsType
 
 cdef class ObservationEncoder:
     cdef encode(self, const GridObject *obj, ObsType[:] obs)

@@ -4,7 +4,7 @@ cimport numpy as cnp
 import numpy as np
 from puffergrid.action cimport ActionArg, ActionHandler
 from puffergrid.grid_object cimport Layer, GridLocation
-from puffergrid.observation_encoder cimport ObservationEncoder
+from puffergrid.observation_encoder cimport ObservationEncoder, ObsType
 from puffergrid.grid_object cimport GridObject, GridObjectId
 from puffergrid.event cimport EventManager, EventHandler
 from puffergrid.grid cimport Grid
@@ -12,6 +12,7 @@ from libcpp.vector cimport vector
 from puffergrid.stats_tracker cimport StatsTracker
 import gymnasium as gym
 
+obs_np_type = np.uint8
 cdef class GridEnv:
     def __init__(
             self,
@@ -45,7 +46,7 @@ cdef class GridEnv:
             np.zeros(
                 (max_agents, len(self._obs_encoder.feature_names()),
                 self._obs_height, self._obs_width),
-                dtype=np.int32),
+                dtype=obs_np_type),
             np.zeros(max_agents, dtype=np.int8),
             np.zeros(max_agents, dtype=np.int8),
             np.zeros(max_agents, dtype=np.float32)
@@ -138,7 +139,7 @@ cdef class GridEnv:
 
     cpdef void set_buffers(
         self,
-        cnp.ndarray[int, ndim=4] observations,
+        cnp.ndarray[ObsType, ndim=4] observations,
         cnp.ndarray[char, ndim=1] terminals,
         cnp.ndarray[char, ndim=1] truncations,
         cnp.ndarray[float, ndim=1] rewards):
@@ -181,7 +182,7 @@ cdef class GridEnv:
         GridObjectId observer_id,
         unsigned short obs_width,
         unsigned short obs_height,
-        int[:,:,:] observation):
+        ObsType[:,:,:] observation):
 
         cdef GridObject* observer = self._grid.object(observer_id)
         self._compute_observation(
@@ -193,7 +194,7 @@ cdef class GridEnv:
         unsigned short col,
         unsigned short obs_width,
         unsigned short obs_height,
-        int[:,:,:] observation):
+        ObsType[:,:,:] observation):
 
         self._compute_observation(
             row, col, obs_width, obs_height, observation)
@@ -218,13 +219,13 @@ cdef class GridEnv:
 
     @property
     def observation_space(self):
-        type_info = np.iinfo(np.int32)
+        type_info = np.iinfo(obs_np_type)
         return gym.spaces.Box(
             low=type_info.min, high=type_info.max,
             shape=(
                 len(self._obs_encoder.feature_names()),
                 self._obs_height, self._obs_width),
-            dtype=np.int32
+            dtype=obs_np_type
         )
 
 
