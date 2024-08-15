@@ -95,7 +95,7 @@ cdef class GridEnv:
         unsigned short obs_height,
         ObsType[:,:,:] observation)
 
-    cpdef stats(self)
+    cpdef get_episode_stats(self)
 
     cpdef tuple get_buffers(self)
     cpdef cnp.ndarray render_ascii(self, list[char] type_to_char)

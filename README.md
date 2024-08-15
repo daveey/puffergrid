@@ -171,7 +171,7 @@ for _ in range(1000):
         break
 
 # Print final stats
-print(env.unwrapped.stats())
+print(env.get_episode_stats())
 ```
 
 This example demonstrates the core components of creating a PufferGrid environment: defining objects, actions, events, observations, and putting them together in an environment class.

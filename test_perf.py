@@ -61,7 +61,7 @@ def main():
         p.sort_stats(SortKey.TIME).print_stats(25)
     else:
         test_performance(env, actions, args.duration, args.max_steps)
-        print(env.stats())
+        print(env.get_episode_stats())
 
 if __name__ == "__main__":
     main()

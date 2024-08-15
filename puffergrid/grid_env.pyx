@@ -199,7 +199,7 @@ cdef class GridEnv:
         self._compute_observation(
             row, col, obs_width, obs_height, observation)
 
-    cpdef stats(self):
+    cpdef get_episode_stats(self):
         return self._stats.to_pydict()
 
     cpdef tuple get_buffers(self):
