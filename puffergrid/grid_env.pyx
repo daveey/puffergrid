@@ -105,8 +105,6 @@ cdef class GridEnv:
             GridObject *agent
             ActionHandler handler
 
-        self._terminals[:] = 0
-        self._truncations[:] = 0
         self._rewards[:] = 0
         self._observations[:, :, :, :] = 0
 
@@ -131,6 +129,8 @@ cdef class GridEnv:
         if self._current_timestep > 0:
             raise NotImplemented("Cannot reset after stepping")
 
+        self._terminals[:] = 0
+        self._truncations[:] = 0
         self._compute_observations()
         return (self._observations_np, {})
 

@@ -30,7 +30,7 @@ class Grid {
         }
 
         inline ~Grid() {
-            for (int id = 1; id < objects.size(); ++id) {
+            for (unsigned long id = 1; id < objects.size(); ++id) {
                 if (objects[id] != nullptr) {
                     delete objects[id];
                 }
