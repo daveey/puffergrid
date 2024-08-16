@@ -38,6 +38,8 @@ cdef class GridEnv:
         char[:] _truncations
         cnp.ndarray _rewards_np
         float[:] _rewards
+        cnp.ndarray _episode_rewards_np
+        float[:] _episode_rewards
 
         StatsTracker _stats
 
@@ -96,6 +98,7 @@ cdef class GridEnv:
         ObsType[:,:,:] observation)
 
     cpdef get_episode_stats(self)
+    cpdef get_episode_rewards(self)
 
     cpdef tuple get_buffers(self)
     cpdef cnp.ndarray render_ascii(self, list[char] type_to_char)

@@ -119,6 +119,9 @@ cdef class GridEnv:
             handler.handle_action(idx, agent.id, arg)
         self._compute_observations()
 
+        for i in range(self._episode_rewards.shape[0]):
+            self._episode_rewards[i] += self._rewards[i]
+
         if self._max_timestep > 0 and self._current_timestep >= self._max_timestep:
             self._truncations[:] = 1
 
@@ -131,6 +134,7 @@ cdef class GridEnv:
 
         self._terminals[:] = 0
         self._truncations[:] = 0
+        self._episode_rewards[:] = 0
         self._compute_observations()
         return (self._observations_np, {})
 
@@ -153,6 +157,8 @@ cdef class GridEnv:
         self._truncations = truncations
         self._rewards_np = rewards
         self._rewards = rewards
+        self._episode_rewards_np = np.zeros_like(rewards)
+        self._episode_rewards = self._episode_rewards_np
 
     cpdef grid(self):
         return []
@@ -199,6 +205,9 @@ cdef class GridEnv:
 
         self._compute_observation(
             row, col, obs_width, obs_height, observation)
+
+    cpdef get_episode_rewards(self):
+        return self._episode_rewards_np
 
     cpdef get_episode_stats(self):
         return self._stats.to_pydict()
