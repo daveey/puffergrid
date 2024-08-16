@@ -106,6 +106,7 @@ cdef class GridEnv:
             ActionHandler handler
 
         self._terminals[:] = 0
+        self._truncations[:] = 0
         self._rewards[:] = 0
         self._observations[:, :, :, :] = 0
 
@@ -211,6 +212,14 @@ cdef class GridEnv:
         for obj_id in range(1, self._grid.objects.size()):
             obj = self._grid.object(obj_id)
             grid[obj.location.r, obj.location.c] = type_to_char[obj._type_id]
+        return grid
+
+    cpdef cnp.ndarray grid_objects(self):
+        cdef GridObject *obj
+        grid = np.zeros((self._grid.height, self._grid.width), dtype=np.uint8)
+        for obj_id in range(1, self._grid.objects.size()):
+            obj = self._grid.object(obj_id)
+            grid[obj.location.r, obj.location.c] = obj._type_id + 1
         return grid
 
     @property

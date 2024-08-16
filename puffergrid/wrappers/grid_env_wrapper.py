@@ -6,7 +6,7 @@ import pettingzoo
 import gymnasium as gym
 
 from env.griddly.builder import action
-from env.mettagrid import render
+from env.mettagrid import raylib_client
 import pufferlib
 from pufferlib.environment import PufferEnv
 

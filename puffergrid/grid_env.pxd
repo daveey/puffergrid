@@ -99,3 +99,4 @@ cdef class GridEnv:
 
     cpdef tuple get_buffers(self)
     cpdef cnp.ndarray render_ascii(self, list[char] type_to_char)
+    cpdef cnp.ndarray grid_objects(self)
